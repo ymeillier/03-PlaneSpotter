@@ -1,0 +1,61 @@
+#NOTE: You obviously need to adapt the hostname in the Ingress spec to reflect your domain name. 
+# So change 
+# - host: planespotter.demo.yves.local to whatever your desired fqdn is.
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: planespotter-frontend
+  namespace: planespotter
+  labels:
+    app: planespotter-frontend
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: planespotter-frontend
+  template:
+    metadata:
+      labels:
+        app: planespotter-frontend
+        tier: frontend
+    spec:
+      containers:
+      - name: planespotter-fe
+        image: yfauser/planespotter-frontend:b0a8b3186c3c18fd23632cf45ff7504b23e7c5b9
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PLANESPOTTER_API_ENDPOINT
+          value: planespotter-svc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: planespotter-frontend
+  namespace: planespotter
+  labels:
+    app: planespotter-frontend
+spec:
+  ports:
+    # the port that this service should serve on
+    - port: 80
+  selector:
+    app: planespotter-frontend
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: planespotter-frontend
+  namespace: planespotter
+spec:
+  rules:
+  - host: planespotter.demo.yves.local
+    http:
+      paths:
+      - backend:
+          serviceName: planespotter-frontend
+          servicePort: 80
+#You should now be able to browse to the FQDN you used and get back the Planespotter Web-Pages. 
+#You should be able to browse through the Aircraft registry, but you should not yet see any airborne aircrafts, 
+#as we haven't deployed the ADSB Sync Service and the Redis in-memory DB/Cache yet
